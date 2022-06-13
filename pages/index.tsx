@@ -18,9 +18,12 @@ const Home: NextPage = () => {
   const [votes, setVotes] = useState({} as Votes);
 
   const handleLogin = async () => {
-    await supabaseClient.auth.signIn({
-      provider: "google",
-    });
+    await supabaseClient.auth.signIn(
+      {
+        provider: "google",
+      },
+      { redirectTo: window.location.href }
+    );
   };
 
   const handleVote = async ({ voted_for, voted_by }: Vote) => {
