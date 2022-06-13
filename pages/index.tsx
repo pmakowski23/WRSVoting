@@ -1,18 +1,21 @@
+import { useEffect, useState } from "react";
 import type { NextPage } from "next";
 import Head from "next/head";
 
-import { Button, Center, Text } from "@mantine/core";
+import countBy from "lodash.countby";
+
+import { Button, Center, Divider, Text } from "@mantine/core";
 
 import { supabaseClient } from "@supabase/supabase-auth-helpers/nextjs";
 import { useUser } from "@supabase/supabase-auth-helpers/react";
 
 import { Voting } from "../components/Voting";
-import { Vote } from "../@types/Vote";
-import { useEffect, useState } from "react";
+import { Vote, Votes } from "../@types/Vote";
 
 const Home: NextPage = () => {
   const { user } = useUser();
   const [hasAlreadyVoted, setHasAlreadyVoted] = useState(false);
+  const [votes, setVotes] = useState({} as Votes);
 
   const handleLogin = async () => {
     await supabaseClient.auth.signIn({
@@ -32,10 +35,17 @@ const Home: NextPage = () => {
   }, [user]);
 
   const checkIfhasAlreadyVoted = async () => {
-    setHasAlreadyVoted(
+    const voted =
       (await supabaseClient.from("votes").select("voted_by")).body?.some(
         ({ voted_by }) => voted_by === user?.id
-      ) || false
+      ) || false;
+    setHasAlreadyVoted(voted);
+    if (voted) getVotes();
+  };
+
+  const getVotes = async () => {
+    setVotes(
+      countBy((await supabaseClient.from("votes").select()).body, "voted_for")
     );
   };
 
@@ -73,7 +83,19 @@ const Home: NextPage = () => {
               <>
                 <Text>Logged in as {user.user_metadata.full_name}</Text>
                 {hasAlreadyVoted ? (
-                  <Text>You have already voted</Text>
+                  <>
+                    <Text>You have already voted</Text>
+                    <Divider my="sm" />
+                    {votes && (
+                      <Text>
+                        {Object.keys(votes).map((key) => (
+                          <Text key={key}>
+                            {key} - {votes[key]} votes
+                          </Text>
+                        ))}
+                      </Text>
+                    )}
+                  </>
                 ) : (
                   <Voting
                     candidateNames={[
